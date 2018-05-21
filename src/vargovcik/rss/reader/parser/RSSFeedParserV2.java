@@ -497,7 +497,7 @@ public class RSSFeedParserV2 {
 			StringBuilder sb = new StringBuilder();
 			
 			for (int i = 3; i < paragraphs.length; i++)
-				sb.append(paragraphs[i]).append("\n");
+				sb.append(paragraphs[i]);
 
 			RSSNews news = new RSSNews();
 			
@@ -526,7 +526,7 @@ public class RSSFeedParserV2 {
 				StringBuilder sb = new StringBuilder();
 				
 				for (int i = 1; i < paragraphs.length; i++)
-					sb.append(paragraphs[i]).append("\n");
+					sb.append(paragraphs[i]);
 				
 				news.setTitle(firstElString);
 				news.setNewsMessage(sb.toString());

@@ -1,13 +1,17 @@
 package vargovcik.rss.reader.writer;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -36,66 +40,33 @@ public class RSSFeedWriter {
 	}
 
 	public void saveFixtures(List<RSSFixture> fixtures) {
-
-		String sqlQuery = "INSERT IGNORE INTO `gaa_club`.`fixtures` (`venue`,`home`,`away`,`ref`,`group`,`dateTime`) VALUES (?,?,?,?,?,?);";
+		
+		String sqlQuery = "call insertFixtures(?,?,?,?,?,?);";
 		
 		try ( Connection connection = DriverManager.getConnection(dbURL,propObj);
-		      PreparedStatement statement = connection.prepareStatement(sqlQuery); ) {
+				CallableStatement callable = connection.prepareCall(sqlQuery); ) {
 			
 	        int i = 0;
 
 	        for (RSSFixture entity : fixtures) {
 	        	
-	        	if(entity == null)
+	        	if(entity == null) {
+	        		 i++;
 	        		continue;
+	        	}
 	        	
-	            statement.setString(1, entity.getVenue());
-	            statement.setString(2, entity.getHome());
-	            statement.setString(3, entity.getAway());
-	            statement.setString(4, null);
-	            statement.setString(5, entity.getDivision());
-	            statement.setDate(6, toSqlDateTime(entity.getDateTime()));
-
-	            statement.addBatch();
+	        	callable.setString(1, entity.getVenue());
+	        	callable.setString(2, entity.getHome());
+	        	callable.setString(3, entity.getAway());
+	        	callable.setString(4, null);
+	        	callable.setString(5, entity.getDivision());
+	        	callable.setTimestamp(6, toSqlDateTime(entity.getDateTime()));
+	        	
+	            callable.addBatch();
 	            i++;
 
 	            if (i % 1000 == 0 || i == fixtures.size()) {
-	                statement.executeBatch(); // Execute every 1000 items.
-	            }
-	        }
-	    }
-		catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}		
-	}
-
-	public void savelotto(List<RSSLotto> lotto) {
-
-		String sqlQuery = "INSERT IGNORE INTO `gaa_club`.`lotto` (`draw1`,`draw2`,`draw3`,`draw4`,`message`,`drawdate`) VALUES (?,?,?,?,?,?);";
-		
-		try ( Connection connection = DriverManager.getConnection(dbURL,propObj);
-		      PreparedStatement statement = connection.prepareStatement(sqlQuery); ) {
-			
-	        int i = 0;
-
-	        for (RSSLotto entity : lotto) {
-	        	
-	        	if(entity == null)
-	        		continue;
-	        	
-	            statement.setInt(1, entity.getDraw()[0]);
-	            statement.setInt(2, entity.getDraw()[1]);
-	            statement.setInt(3, entity.getDraw()[2]);
-	            statement.setInt(4, entity.getDraw()[3]);
-	            statement.setString(5, entity.getMessage());
-	            statement.setDate(6, toSqlDateTime(entity.getDrawDate()));
-
-	            statement.addBatch();
-	            i++;
-
-	            if (i % 1000 == 0 || i == lotto.size()) {
-	                statement.executeBatch(); // Execute every 1000 items.
+	            	int[] updateCounts = callable.executeBatch(); // Execute every 1000 items.
 	            }
 	        }
 	    }
@@ -105,30 +76,68 @@ public class RSSFeedWriter {
 		}	
 	}
 
+	public void savelotto(List<RSSLotto> lotto) {
+		
+		String sqlQuery = "call insertlotto(?,?,?,?,?,?);";
+		
+		try ( Connection connection = DriverManager.getConnection(dbURL,propObj);
+				CallableStatement callable = connection.prepareCall(sqlQuery); ) {
+			
+	        int i = 0;
+
+        	for (RSSLotto entity : lotto) {
+	        	
+	        	if(entity == null)
+	        		continue;
+	        	
+
+	            callable.setDate(1, toSqlDateTime(entity.getDrawDate()));
+	        	callable.setInt(2, entity.getDraw()[0]);
+	        	callable.setInt(3, entity.getDraw()[1]);
+	            callable.setInt(4, entity.getDraw()[2]);
+	            callable.setInt(5, entity.getDraw()[3]);
+	            callable.setString(6, entity.getMessage());
+	        	
+	            callable.addBatch();
+	            i++;
+
+	            if (i % 1000 == 0 || i == lotto.size()) {
+	            	int[] updateCounts = callable.executeBatch(); // Execute every 1000 items.
+	            }
+	        }
+	    }
+		catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+	}	
+	
 	public void saveNews(List<RSSNews> news) {
 
 
-		String sqlQuery = "INSERT IGNORE INTO `gaa_club`.`news` (`title`,`newsMessage`,`dateTime`) VALUES (?,?,?);";
+		String sqlQuery = "call insertMessage(?,?,?);";
 		
 		try ( Connection connection = DriverManager.getConnection(dbURL,propObj);
-		      PreparedStatement statement = connection.prepareStatement(sqlQuery); ) {
+				CallableStatement callable = connection.prepareCall(sqlQuery); ) {
 			
 	        int i = 0;
 
 	        for (RSSNews entity : news) {
 	        	
-	        	if(entity == null)
+	        	if(entity == null) {
+	        		 i++;
 	        		continue;
+	        	}
 	        	
-	            statement.setString(1, entity.getTitle());
-	            statement.setString(2, entity.getNewsMessage());
-	            statement.setDate(3, toSqlDateTime(entity.getDateTime()));
-
-	            statement.addBatch();
+	        	callable.setString(1, entity.getTitle());
+	        	callable.setString(2, entity.getNewsMessage());
+	        	callable.setTimestamp(3, toSqlDateTime(entity.getDateTime()));
+	        	
+	            callable.addBatch();
 	            i++;
 
 	            if (i % 1000 == 0 || i == news.size()) {
-	                statement.executeBatch(); // Execute every 1000 items.
+	            	int[] updateCounts = callable.executeBatch(); // Execute every 1000 items.
 	            }
 	        }
 	    }
@@ -140,30 +149,31 @@ public class RSSFeedWriter {
 
 	public void saveResults(List<RSSResult> results) {
 
-		String sqlQuery = "INSERT IGNORE INTO `gaa_club`.`results` (`home`,`away`,`homeScore`,`awayScore`,`division`,`dateTime`) VALUES (?,?,?,?,?,?);";
+		String sqlQuery = "call insertResults(?,?,?,?,?,?);";
 		
 		try ( Connection connection = DriverManager.getConnection(dbURL,propObj);
-		      PreparedStatement statement = connection.prepareStatement(sqlQuery); ) {
+				CallableStatement callable = connection.prepareCall(sqlQuery); ) {
 			
 	        int i = 0;
 
-	        for (RSSResult entity : results) {
+        	for (RSSResult entity : results) {
 	        	
 	        	if(entity == null)
 	        		continue;
 	        	
-	            statement.setString(1, entity.getHome());
-	            statement.setString(2, entity.getAway());
-	            statement.setString(3, entity.getHomeScore());
-	            statement.setString(4, entity.getAwayScore());
-	            statement.setString(5, entity.getDivision());
-	            statement.setDate(6, toSqlDateTime(entity.getDateTime()));
+	        	
+	        	callable.setTimestamp(1, toSqlDateTime(entity.getDateTime()));
+	        	callable.setString(2, entity.getHome());
+	        	callable.setString(3, entity.getAway());
+	        	callable.setString(4, entity.getHomeScore());
+	        	callable.setString(5, entity.getAwayScore());
+	        	callable.setString(6, entity.getDivision());
 
-	            statement.addBatch();
+	        	callable.addBatch();
 	            i++;
 
 	            if (i % 1000 == 0 || i == results.size()) {
-	                statement.executeBatch(); // Execute every 1000 items.
+	            	callable.executeBatch(); // Execute every 1000 items.
 	            }
 	        }
 	    }
@@ -174,8 +184,9 @@ public class RSSFeedWriter {
 	}
 
 
-	private Date toSqlDateTime(LocalDateTime dateTime) {
-		return Date.valueOf(dateTime.toLocalDate());
+	private Timestamp toSqlDateTime(LocalDateTime dateTime) {
+		ZonedDateTime zdt = dateTime.atZone(ZoneId.systemDefault());		
+		return new Timestamp(zdt.toInstant().toEpochMilli());
 	}
 
 	private Date toSqlDateTime(LocalDate date) {
